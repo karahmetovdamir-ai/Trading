@@ -13,11 +13,18 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Unzip Project Files
+    - name: Unzip Project Files (Smart Search)
       run: |
-        # ВНИМАНИЕ: Если твой ZIP-архив называется по-другому, 
-        # просто замени текст "forex-bot.zip" ниже на имя твоего файла!
-        unzip forex-bot.zip -d extracted_project
+        # Бот сам находит первый попавшийся ZIP-файл в корне репозитория
+        ZIP_FILE=$(ls *.zip 2>/dev/null | head -n 1)
+        
+        if [ -z "$ZIP_FILE" ]; then
+          echo "ERROR: No ZIP file found in the repository root!"
+          exit 1
+        fi
+        
+        echo "Found project archive: $ZIP_FILE"
+        unzip "$ZIP_FILE" -d extracted_project
         
         if [ -d "extracted_project/app" ]; then
           cp -r extracted_project/* .
