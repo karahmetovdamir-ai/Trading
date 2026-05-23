@@ -1,0 +1,67 @@
+name: Forex Bot APK Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Unzip Project Files
+      run: |
+        # ВНИМАНИЕ: Если твой ZIP-архив называется по-другому, 
+        # просто замени текст "forex-bot.zip" ниже на имя твоего файла!
+        unzip forex-bot.zip -d extracted_project
+        
+        if [ -d "extracted_project/app" ]; then
+          cp -r extracted_project/* .
+        else
+          cp -r extracted_project/*/* . 2>/dev/null || cp -r extracted_project/* .
+        fi
+
+    - name: Handle Missing Environment Files
+      run: |
+        touch .env.example
+        touch .env
+        if [ -d "app" ]; then
+          touch app/.env.example 2>/dev/null || true
+          touch app/.env 2>/dev/null || true
+        fi
+
+    - name: Create Auto-Generated Debug Keystore
+      run: |
+        mkdir -p ~/.android
+        keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+        cp ~/.android/debug.keystore .
+        if [ -d "app" ]; then
+          cp ~/.android/debug.keystore app/
+        fi
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: current
+
+    - name: Build Debug APK
+      run: gradle assembleDebug --no-daemon -Djava.awt.headless=true
+
+    - name: Upload Finished APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: forex-trading-app
+        path: |
+          **/build/outputs/apk/debug/*.apk
+          app/build/outputs/apk/debug/app-debug.apk
+          
