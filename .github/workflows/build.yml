@@ -1,4 +1,4 @@
-name: Android APK Build
+name: Forex Bot APK Build
 
 on:
   push:
@@ -15,7 +15,10 @@ jobs:
 
     - name: Unzip Project Files
       run: |
-        unzip bitpulse-btc-trading-bot.zip -d extracted_project
+        # ВНИМАНИЕ: Если твой ZIP-архив называется по-другому, 
+        # просто замени текст "forex-bot.zip" ниже на имя твоего файла!
+        unzip forex-bot.zip -d extracted_project
+        
         if [ -d "extracted_project/app" ]; then
           cp -r extracted_project/* .
         else
@@ -33,10 +36,8 @@ jobs:
 
     - name: Create Auto-Generated Debug Keystore
       run: |
-        # Генерируем дефолтный ключ, который требует конфигурация проекта
         mkdir -p ~/.android
         keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-        # На всякий случай копируем его и в корень, и в папку app
         cp ~/.android/debug.keystore .
         if [ -d "app" ]; then
           cp ~/.android/debug.keystore app/
@@ -59,7 +60,7 @@ jobs:
     - name: Upload Finished APK
       uses: actions/upload-artifact@v4
       with:
-        name: crypto-bot-app
+        name: forex-trading-app
         path: |
           **/build/outputs/apk/debug/*.apk
           app/build/outputs/apk/debug/app-debug.apk
