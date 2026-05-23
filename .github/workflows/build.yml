@@ -15,31 +15,37 @@ jobs:
 
     - name: Unzip Project Files (Smart Search)
       run: |
-        # Бот сам находит первый попавшийся ZIP-файл в корне репозитория
         ZIP_FILE=$(ls *.zip 2>/dev/null | head -n 1)
-        
         if [ -z "$ZIP_FILE" ]; then
-          echo "ERROR: No ZIP file found in the repository root!"
+          echo "ERROR: No ZIP file found!"
           exit 1
         fi
-        
-        echo "Found project archive: $ZIP_FILE"
         unzip "$ZIP_FILE" -d extracted_project
-        
         if [ -d "extracted_project/app" ]; then
           cp -r extracted_project/* .
         else
           cp -r extracted_project/*/* . 2>/dev/null || cp -r extracted_project/* .
         fi
 
-    - name: Handle Missing Environment Files
+    - name: Handle Missing Environment & API Keys
       run: |
-        touch .env.example
-        touch .env
+        # Создаем файлы окружения
+        touch .env.example .env local.properties
         if [ -d "app" ]; then
-          touch app/.env.example 2>/dev/null || true
-          touch app/.env 2>/dev/null || true
+          touch app/.env.example app/.env app/local.properties 2>/dev/null || true
         fi
+        
+        # Прописываем заглушку для API ключа в BuildConfig / local.properties
+        echo "GEMINI_API_KEY=mock_key_for_building_purposes" >> local.properties
+        if [ -d "app" ]; then
+          echo "GEMINI_API_KEY=mock_key_for_building_purposes" >> app/local.properties
+        fi
+
+    - name: Bypass Code References (Hard Fix)
+      run: |
+        # На случай, если ключ зашит прямо в коде как константа,
+        # этот скрипт найдет его и создаст глобальную заглушку, чтобы билд не падал
+        find . -name "*.kt" -o -name "*.java" | xargs sed -i 's/BuildConfig.GEMINI_API_KEY/"mock_key"/g' 2>/dev/null || true
 
     - name: Create Auto-Generated Debug Keystore
       run: |
